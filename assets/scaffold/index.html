@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>学习法远征 · Learn OS</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ============ 顶部 HUD ============ -->
+  <header class="hud">
+    <div class="hud-left">
+      <div class="logo">学习法远征</div>
+      <div class="sub">Learn OS · 用学习法学学习法</div>
+    </div>
+    <div class="hud-stats">
+      <div class="stat"><span class="v" id="hud-xp">0</span><span class="k">XP</span></div>
+      <div class="stat"><span class="v" id="hud-lv">1</span><span class="k">等级</span></div>
+      <div class="stat"><span class="v" id="hud-streak">0</span><span class="k">连胜天</span></div>
+      <div class="stat"><span class="v" id="hud-due">0</span><span class="k">到期卡</span></div>
+      <div class="stat"><span class="v" id="hud-frag">0</span><span class="k">碎片</span></div>
+    </div>
+    <nav class="hud-nav">
+      <button class="tab active" data-view="map">地图</button>
+      <button class="tab" data-view="recall">今日复习</button>
+      <button class="tab" data-view="wall">复盘墙</button>
+      <button class="tab" data-view="library">方法图鉴</button>
+      <button class="tab" data-view="companion">AI 学伴</button>
+    </nav>
+  </header>
+
+  <!-- ============ 主区 ============ -->
+  <main id="main">
+
+    <!-- ---------- 地图视图 ---------- -->
+    <section class="view" id="view-map">
+      <div class="view-head">
+        <h1>方法任务地图</h1>
+        <p>六个区域对应四阶段闭环的六个环节。每关都标注了它训练的是哪种方法——通关条件是延迟提取，不是看过。</p>
+      </div>
+      <div class="map" id="map-grid"></div>
+
+      <div class="panel">
+        <h3>本作核心规则（别忘了你在玩一款学习法演示器）</h3>
+        <ul class="rules">
+          <li><b>先预测再作答</b>：每题先选把握度，系统记录你的元认知校准误差。</li>
+          <li><b>闭卷优先</b>：回忆关不给提示，看提示要扣分——这是主动回忆的代价机制。</li>
+          <li><b>间隔调度</b>：闪卡按 SM-2 排期，答对拉长间隔，答错回炉重学。</li>
+          <li><b>XP 只奖励提取</b>：看材料不给分，凭回忆答对才给满分。</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ---------- 今日复习（SM-2 队列） ---------- -->
+    <section class="view hidden" id="view-recall">
+      <div class="view-head">
+        <h1>今日复习队列</h1>
+        <p>SM-2 调度：到期卡优先，新卡每日上限 20 张。评分决定下次出现的时间，答错立刻回炉。</p>
+      </div>
+      <div class="recall-wrap">
+        <div class="card-box" id="recall-box">
+          <div class="card-face" id="recall-front"></div>
+          <div class="card-face hidden" id="recall-back"></div>
+          <div class="card-meta" id="recall-meta"></div>
+        </div>
+        <div class="grade-row hidden" id="recall-grades">
+          <button class="g g1" data-g="1">忘记</button>
+          <button class="g g3" data-g="3">困难</button>
+          <button class="g g4" data-g="4">良好</button>
+          <button class="g g5" data-g="5">轻松</button>
+        </div>
+        <div class="row-btns">
+          <button class="btn primary" id="recall-show">显示答案</button>
+          <button class="btn ghost" id="recall-skip">跳过本张</button>
+        </div>
+        <div class="queue-info" id="queue-info"></div>
+      </div>
+    </section>
+
+    <!-- ---------- 复盘墙 ---------- -->
+    <section class="view hidden" id="view-wall">
+      <div class="view-head">
+        <h1>复盘成就墙</h1>
+        <p>这里不显示你"学了多久"，只显示你能取出来多少。</p>
+      </div>
+      <div class="wall-grid">
+        <div class="panel">
+          <h3>六区域掌握度</h3>
+          <div id="mastery-rings" class="rings"></div>
+        </div>
+        <div class="panel">
+          <h3>错因分布</h3>
+          <div id="mistake-bars" class="bars"></div>
+          <p class="hint">知识性错误占比下降才算真进步；表达类错误下降可能只是熟练度。</p>
+        </div>
+        <div class="panel">
+          <h3>元认知校准</h3>
+          <div id="calib" class="calib"></div>
+          <p class="hint">校准误差 = |预测正确率 − 实际正确率|。误差越小，你越清楚自己哪里不会。</p>
+        </div>
+        <div class="panel">
+          <h3>连胜日历 · 近 14 天</h3>
+          <div id="streak-cal" class="cal"></div>
+        </div>
+        <div class="panel">
+          <h3>成就</h3>
+          <div id="achv" class="achv"></div>
+        </div>
+        <div class="panel">
+          <h3>数据导出</h3>
+          <p class="hint">所有进度可导出，避免平台锁定与黑箱算法。</p>
+          <div class="row-btns">
+            <button class="btn" id="exp-csv">导出 Anki 卡包 (CSV)</button>
+            <button class="btn" id="exp-json">导出学习日志 (JSON)</button>
+            <button class="btn danger" id="exp-reset">清空进度</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------- 方法图鉴 ---------- -->
+    <section class="view hidden" id="view-library">
+      <div class="view-head">
+        <h1>18 种方法图鉴</h1>
+        <p>按证据强度分层：第一梯队无条件优先，第二梯队基础扎实后叠加，辅助类只做配角，最后一类请当反面教材。</p>
+        <div class="row-btns" id="lib-filter">
+          <button class="btn small" data-f="all">全部 18</button>
+          <button class="btn small" data-f="1">第一梯队</button>
+          <button class="btn small" data-f="2">第二梯队</button>
+          <button class="btn small" data-f="3">辅助</button>
+          <button class="btn small" data-f="4">误传</button>
+        </div>
+      </div>
+      <div class="lib-grid" id="lib-grid"></div>
+    </section>
+
+    <!-- ---------- AI 学伴 ---------- -->
+    <section class="view hidden" id="view-companion">
+      <div class="view-head">
+        <h1>AI 学伴 · 提示词库</h1>
+        <p>规则：AI 只做追问者、生成器、诊断者。默认不给你答案，你独立作答之后它才批改。下面是可直接复制的提示词。</p>
+      </div>
+      <div class="prompt-grid" id="prompt-grid"></div>
+      <div class="panel">
+        <h3>三条不可让渡的红线</h3>
+        <ul class="rules">
+          <li><b>先生成，后辅助</b>：任何任务先独立做，AI 只做批改与追问。</li>
+          <li><b>答案不算产出</b>：不看 AI 文本重写一次，才算完成。</li>
+          <li><b>事实必核查</b>：AI 给的数字与引用，一律二次检索。</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ---------- 关卡视图 ---------- -->
+    <section class="view hidden" id="view-level">
+      <button class="btn ghost back" id="level-back">← 返回地图</button>
+      <div class="level-head">
+        <div class="lv-tag" id="lv-tag"></div>
+        <h1 id="lv-title"></h1>
+        <p id="lv-brief"></p>
+        <div class="lv-method" id="lv-method"></div>
+      </div>
+      <div class="progress-line"><div class="progress-bar" id="lv-progress"></div></div>
+      <div class="stage" id="lv-stage"></div>
+      <div class="row-btns" id="lv-actions"></div>
+      <div class="feedback hidden" id="lv-feedback"></div>
+    </section>
+
+  </main>
+
+  <!-- ============ AI 学伴浮动面板 ============ -->
+  <aside id="npc" class="npc">
+    <div class="npc-head" id="npc-toggle">
+      <span class="dot"></span>
+      <span>AI 学伴</span>
+      <span class="caret">▾</span>
+    </div>
+    <div class="npc-body" id="npc-body">
+      <div class="chat" id="npc-chat"></div>
+      <input id="npc-input" class="npc-input" placeholder="先写下你自己的答案，再让学伴追问…">
+      <div class="row-btns">
+        <button class="btn small" id="npc-ask">让学伴追问</button>
+        <button class="btn small ghost" id="npc-mode">模式：只追问</button>
+      </div>
+      <div class="npc-tip">学伴默认不给答案。切到"批改"模式才会评价你的作答。</div>
+    </div>
+  </aside>
+
+  <footer class="foot">
+    数据保存在本机浏览器（localStorage），不上传。进度可随时导出。
+  </footer>
+</div>
+
+<script src="data.js"></script>
+<script src="lessons.js"></script>
+<script src="engine.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
