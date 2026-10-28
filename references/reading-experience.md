@@ -76,9 +76,27 @@ tc = TTCollection(Kaiti_ttc)
 # 3. fontTools subset → woff2（brotli）→ base64 写进 css
 ```
 
-- `@font-face` 用**自定义族名**（如 `RTRKai`），别复用系统名，避免和系统字体打架
+- `@font-face` 用**自定义族名**（如 `KaiSubset`），别复用系统名，避免和系统字体打架
 - 接入顺序：`katex.css → kai-font.css → styles.css`（字体定义要在使用前）
 - 单文件打包时把 `kai-font.css` 排进 CSS 数组
+
+**找字体这一步有个陷阱**：macOS 在 `Fonts/Subsets/` 下放了一个 58KB 的「按需字体占位包」，
+`mdfind -name Kaiti.ttc` 会**先**返回它。拿它子集化只能得到 3KB 字体、大半字缺字形，
+页面上看起来「换了字体」其实是回退字体。判定只认一条：**完整楷体约 100MB**，
+`build-kai-font.py` 现在会跳过 `Fonts/Subsets/` 且只收 ≥5MB 的候选。
+生成后看一眼输出里的 KB 数：1000 多字的子集，400 档应在 200KB 以上，只有 3KB 就是拿错了文件。
+
+### 脚手架已经内置这一层
+
+`assets/scaffold/kai-font.css` 是给 demo 内容生成好的子集，`index.html` 里在 `styles.css` **之前**引入，
+`styles.css` 里 `--kai:"KaiSubset",…`，只作用于 `.rd-p / .note-q / .note-a`。
+换内容后重跑一次（在项目根目录）：
+
+```bash
+python3 <skill>/assets/reading/build-kai-font.py --root . --out kai-font.css
+```
+
+跳字、缺字的症状是「个别字明显换了字形」，扫全站字符就是为了避免它，别只扫 `data.js`。
 
 ### 只给长文用，别全站套
 
@@ -93,8 +111,8 @@ tc = TTCollection(Kaiti_ttc)
 实测 **16px 楷体 ≈ 14px 屏方**。照原字号直接换字体，读者会觉得「变小了」。按比例上调，并给楷体略松的行高：
 
 ```css
---kai: "RTRKai","Kaiti SC","STKaiti","KaiTi","楷体",serif;  /* 排除繁体楷体，别串字 */
-.rd-p { font-size: 16px; line-height: 1.92; letter-spacing: .01em; }
+--kai: "KaiSubset","Kaiti SC","STKaiti","KaiTi","楷体",serif;  /* 排除繁体楷体，别串字 */
+.rd-p { font-size: 16.5px; line-height: 1.95; letter-spacing: .01em; }
 ```
 
 ### 验收

@@ -29,9 +29,11 @@ description: "按学习科学搭建「游戏化学习网站 / 学习网页 / 背
 2. 内容整理：用户提供原始材料（笔记 / 教材 / 章节列表）
 3. 题库设计：按学习科学拆解为「关卡 → 题目」结构
 4. 复制脚手架：`assets/scaffold/` → 项目目录
-5. 替换数据：编辑 `data.js` 填入真实题库
-6. 本地预览：双击 `index.html` 或 `python -m http.server`
-7. 视觉调优：配色 / 间距 / 动画
+5. 替换数据：编辑 `data.js` 填入真实题库（教材多时另写 `lessons.js`）
+6. 重建楷体子集：`python3 assets/reading/build-kai-font.py --root . --out kai-font.css`（不跑就会缺字）
+7. 本地预览：双击 `index.html` 或 `python -m http.server`
+8. 视觉调优：**不要从零设计**，脚手架已内置设计系统（见 `references/ui-polish.md` 第六节）；
+   要改先跑 `impeccable detect`，改完再跑一遍，并在 WebKit 里逐视图截图
 9. 发布：可选托管到 WorkBuddy Sites 或本地静态服务
 
 ## 数据模型
@@ -110,13 +112,19 @@ python3 assets/reading/build-kai-font.py --root . --family KaiSubset
 
 ```
 scaffold/
-├── index.html       # 入口（双击即可运行）
-├── styles.css       # 全部样式
-├── engine.js        # 引擎（题目渲染、状态管理、动画）
-├── lessons.js       # 关卡 / 题目配置（用户改这个）
-├── data.demo.js     # 演示数据（开箱即用）
-└── data.template.js # 空模板（用户复制后填数据）
+├── index.html        # 入口（双击即可运行）
+├── styles.css        # 设计系统（三级表面 / 瀑布流地图 / 长文层 / 学伴分屏）
+├── kai-font.css      # 楷体子集（build-kai-font.py 生成，换内容后重跑）
+├── engine.js         # SM-2 调度、已学状态、校准、错因、成就、导出
+├── app.js            # 视图渲染与关卡流程（从 DATA 读一切）
+├── lessons.js        # 教材（多时单独放；不用就保持占位）
+├── data.demo.js      # 演示数据（开箱即用）
+└── data.template.js  # 空模板（复制成 data.js 后填内容）
 ```
+
+界面与交互已经是成品级：HUD 信息带、Safari 也平衡的两列瀑布流、780px 正文列宽、
+六类内容块的同色描边语言、`.key/.term/.turn` 长文强调、阅读模式、学伴「⤢」分屏、
+`:focus-visible` 焦点环与 `aria-*` 状态。**新站不需要重新设计外观**，只写内容。
 
 ## 部署
 

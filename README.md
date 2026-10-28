@@ -93,11 +93,16 @@ git clone https://github.com/PenryZen/learn-site-builder.git \
 cp -r assets/scaffold/* ~/my-learn-site/
 cd ~/my-learn-site
 cp data.template.js data.js       # 从这里开始改
+python3 <本仓库>/assets/reading/build-kai-font.py --root . --out kai-font.css   # 按你的字重建楷体子集
 python3 -m http.server 8000
 ```
 
 打开 `http://localhost:8000`，纯前端、零依赖、不联网。
 `data.demo.js` 与 `lessons.demo.js` 是一份完整示例（18 种学习方法的速查站），可以对照着看。
+
+界面是成品级的：三级表面 + 单一信号色的设计系统、Safari 下也平衡的两列瀑布流、
+780px 正文列宽、六类内容块的同色描边语言、楷体长文层、阅读模式、学伴「⤢」分屏、
+键盘可达与 `aria-*` 状态。**不需要重新设计外观**，只写内容即可。
 
 ---
 
@@ -115,7 +120,7 @@ references/
 ├── ui-polish.md            界面打磨：五条硬规则 + 配色 token + 检测命令
 └── reading-experience.md   长篇精读站：公式排版 / 楷体内嵌 / 三引擎朗读 / 长文强调
 assets/
-├── scaffold/               可运行骨架（index.html / styles.css / engine.js / app.js / data.template.js）
+├── scaffold/               可运行骨架（index.html / styles.css / kai-font.css / engine.js / app.js / data.*.js）
 └── reading/                朗读与字体工具（tts.js / tts-proxy.py / build-kai-font.py）
 ```
 

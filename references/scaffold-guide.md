@@ -7,7 +7,8 @@
 | 文件 | 是否要改 | 说明 |
 |---|---|---|
 | `index.html` | 不改 | 页面外壳：HUD、五个视图、关卡视图、浮动学伴 |
-| `styles.css` | 不改 | 样式 |
+| `styles.css` | 不改 | 样式（设计系统，与「通向实在之路」同一套） |
+| `kai-font.css` | **重新生成** | 长文楷体子集，`build-kai-font.py` 产物；内容变了要重跑 |
 | `engine.js` | **不改** | SM-2、已学状态、校准、错因、成就、导出 |
 | `app.js` | **不改** | 渲染与关卡流程（从 `DATA` 读一切） |
 | `data.js` | **写这个** | 内容层：区域、教材、卡片、题目、关卡 |
@@ -20,9 +21,14 @@ mkdir my-learn-site && cd my-learn-site
 cp -r <skill>/assets/scaffold/* .
 cp data.template.js data.js      # 从模板开始写
 # （可选）参考 data.demo.js / lessons.demo.js 看一份完整内容长什么样
+
+# 内容写完之后，按你自己的字重新子集化楷体（不跑这步会用 demo 的子集，缺字）
+python3 <skill>/assets/reading/build-kai-font.py --root . --out kai-font.css
 ```
 
 打开 `index.html` 即可运行。纯前端、无依赖、无构建、不联网。
+
+> 字体输出里 400 档应在 200KB 以上；只有 3KB 说明扫到了系统里的「楷体占位包」，见 `reading-experience.md` 第二节。
 
 ## 三、写作顺序（按这个顺序最省事）
 
@@ -85,22 +91,46 @@ Engine.isLearned('c01')          // 单卡状态
 DATA.lessons.map(l => l.teaches) // 教材覆盖情况
 ```
 
-## 八、样式与 demo 站点
+## 八、可用的样式层（写内容时直接用，别再自造 class）
+
+关卡正文是一堆字符串拼出来的，视觉全靠 class。下面这些在 `styles.css` 里已经定义好：
+
+| 用途 | class | 说明 |
+|---|---|---|
+| 长文正文 | `rd-p` | 楷体 16.5px / 1.95；**必须**用它包正文，否则用不上内嵌字体 |
+| 材料 / 钩子 | `material` / `material hook` | 中性面 / 金色面；里面若放长文字再套 `rd-p` |
+| 一句话核心 | `essence` + 子元素 `eb` | 金色淡底 + 同色描边；`eb` 是小标签（如「一句话本质」） |
+| 内容块 | `blk` + `def/ana/eg/der/recap/hook/mis` | 同色淡底 + 同色描边 + 同色 `blk-t` 标题，六类语义各一色 |
+| 目标 / 前置 | `goalbox` / `needbox` | 绿 / 蓝，用于「这关要达成什么」「需要先会什么」 |
+| 强调 | `key` / `turn` / `term`（+ `term first`） | 卡点句 / 转折词 / 术语；`.key` 横向 padding 必须为 0 |
+| 卡点拆解 | `notesblk` + `note` / `note-q` / `note-a` | 金底块，问答两行都用楷体 |
+| 公式 | `math-line` / `mblk mb-disp` / `.katex` | 独立成行的公式块；需另接 math.js + KaTeX（见 `reading-experience.md`） |
+| 插图 | `bookfig` + `figcaption` | 白底图片 + 左对齐图注，图注可含公式 |
+| 交互图 | `figbox` / `fig-title` / `viz-chip` / `viz-btn` / `viz-readout` | 配合 `viz-core.js` 的画布/SVG 图 |
+| 朗读 | `ttsbar` / `rd-p.tts-on` / `ttscfg` | 配合 `assets/reading/tts.js` |
+| 复习提示 | `resumebar` | 「回到上次位置」提示条 |
+| 标签 | `pill` / `pill hot` / `pill ok` / `tag-new` / `tag-ok` | 中性 / 品红 / 绿 / 未学 / 已学 |
+
+排版约束：`#view-level` 已经是 780px 列宽，**不要**再给段落或卡片加 `max-width`；
+标题层级用 `h2`（块标题）与 `h3`（小节），不要跳级到 `h4`。
+
+## 九、样式与 demo 站点
 
 `assets/scaffold/styles.css` 已经是按 `ui-polish.md` 那套规范调过的版本（深色紫调、三级表面、
-无色条无渐变）。换学科时**不要动它**；真要改观感，先跑一遍 `impeccable detect`，改完再跑一遍。
+无色条无渐变、JS 瀑布流地图、楷体长文层、学伴分屏）。换学科时**不要动它**；
+真要改观感，先跑一遍 `impeccable detect`，改完再跑一遍。
 
 仓库里的 `docs/` 是「脚手架 + demo 数据」的在线演示（GitHub Pages 从这里发布）。
-它和 `assets/scaffold/` 是**复制关系**，改了 scaffold 的 `index.html / styles.css / app.js / engine.js`
+它和 `assets/scaffold/` 是**复制关系**，改了 scaffold 的 `index.html / styles.css / app.js / engine.js / kai-font.css`
 就要同步过去，否则演示站展示的还是旧样式：
 
 ```bash
-cp assets/scaffold/{index.html,styles.css,engine.js,app.js} docs/
+cp assets/scaffold/{index.html,styles.css,engine.js,app.js,kai-font.css} docs/
 cp assets/scaffold/data.demo.js docs/data.js
 cp assets/scaffold/lessons.demo.js docs/lessons.js
 ```
 
-## 九、想改引擎时
+## 十、想改引擎时
 
 `engine.js` 暴露的 API：
 

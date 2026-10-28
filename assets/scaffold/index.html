@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>学习法远征 · Learn OS</title>
+<!-- 楷体子集：给长文正文用。文件由 build-kai-font.py 生成，换内容后重跑一次。 -->
+<link rel="stylesheet" href="kai-font.css">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -13,7 +15,7 @@
   <!-- ============ 顶部 HUD ============ -->
   <header class="hud">
     <div class="hud-left">
-      <div class="logo">学习法远征</div>
+      <div class="logo">学习法<b>远征</b></div>
       <div class="sub">Learn OS · 用学习法学学习法</div>
     </div>
     <div class="hud-stats">
@@ -39,12 +41,12 @@
     <section class="view" id="view-map">
       <div class="view-head">
         <h1>方法任务地图</h1>
-        <p>六个区域对应四阶段闭环的六个环节。每关都标注了它训练的是哪种方法——通关条件是延迟提取，不是看过。</p>
+        <p>六个区域对应四阶段闭环的六个环节。每关都标注了它训练的是哪种方法——<b>通关条件是延迟提取，不是看过</b>。</p>
       </div>
       <div class="map" id="map-grid"></div>
 
       <div class="panel">
-        <h2>本作核心规则（别忘了你在玩一款学习法演示器）</h2>
+        <h2 class="panel-t">本作核心规则（别忘了你在玩一款学习法演示器）</h2>
         <ul class="rules">
           <li><b>先预测再作答</b>：每题先选把握度，系统记录你的元认知校准误差。</li>
           <li><b>闭卷优先</b>：回忆关不给提示，看提示要扣分——这是主动回忆的代价机制。</li>
@@ -58,7 +60,7 @@
     <section class="view hidden" id="view-recall">
       <div class="view-head">
         <h1>今日复习队列</h1>
-        <p>SM-2 调度：到期卡优先，新卡每日上限 20 张。评分决定下次出现的时间，答错立刻回炉。</p>
+        <p>SM-2 调度：到期卡优先，新卡每日上限 20 张。评分决定下次出现的时间，答错立刻回炉。队列只从<b>已通关</b>的区域出卡——没读过的内容不会来考你。</p>
       </div>
       <div class="recall-wrap">
         <div class="card-box" id="recall-box">
@@ -88,29 +90,29 @@
       </div>
       <div class="wall-grid">
         <div class="panel">
-          <h2>六区域掌握度</h2>
+          <h2 class="panel-t">六区域掌握度</h2>
           <div id="mastery-rings" class="rings"></div>
         </div>
         <div class="panel">
-          <h2>错因分布</h2>
+          <h2 class="panel-t">错因分布</h2>
           <div id="mistake-bars" class="bars"></div>
           <p class="hint">知识性错误占比下降才算真进步；表达类错误下降可能只是熟练度。</p>
         </div>
         <div class="panel">
-          <h2>元认知校准</h2>
+          <h2 class="panel-t">元认知校准</h2>
           <div id="calib" class="calib"></div>
           <p class="hint">校准误差 = |预测正确率 − 实际正确率|。误差越小，你越清楚自己哪里不会。</p>
         </div>
         <div class="panel">
-          <h2>连胜日历 · 近 14 天</h2>
+          <h2 class="panel-t">连胜日历 · 近 14 天</h2>
           <div id="streak-cal" class="cal"></div>
         </div>
         <div class="panel">
-          <h2>成就</h2>
+          <h2 class="panel-t">成就</h2>
           <div id="achv" class="achv"></div>
         </div>
         <div class="panel">
-          <h2>数据导出</h2>
+          <h2 class="panel-t">数据导出</h2>
           <p class="hint">所有进度可导出，避免平台锁定与黑箱算法。</p>
           <div class="row-btns">
             <button class="btn" id="exp-csv">导出 Anki 卡包 (CSV)</button>
@@ -145,7 +147,7 @@
       </div>
       <div class="prompt-grid" id="prompt-grid"></div>
       <div class="panel">
-        <h2>三条不可让渡的红线</h2>
+        <h2 class="panel-t">三条不可让渡的红线</h2>
         <ul class="rules">
           <li><b>先生成，后辅助</b>：任何任务先独立做，AI 只做批改与追问。</li>
           <li><b>答案不算产出</b>：不看 AI 文本重写一次，才算完成。</li>
@@ -157,6 +159,7 @@
     <!-- ---------- 关卡视图 ---------- -->
     <section class="view hidden" id="view-level">
       <button class="btn ghost back" id="level-back">← 返回地图</button>
+      <button class="btn ghost back" id="readmode-toggle" title="切换精读排版：大字号、宽行距，适合长时间阅读">阅读模式：关</button>
       <div class="level-head">
         <div class="lv-tag" id="lv-tag"></div>
         <h1 id="lv-title"></h1>
@@ -176,16 +179,25 @@
     <div class="npc-head" id="npc-toggle">
       <span class="dot"></span>
       <span>AI 学伴</span>
+      <span class="npc-badge" id="npc-badge">内置规则</span>
+      <button class="npc-exp" id="npc-expand" type="button" aria-label="展开学伴面板为分屏"
+              title="展开为分屏：学伴铺在右侧，和网页并排看">⤢</button>
       <span class="caret">▾</span>
     </div>
     <div class="npc-body" id="npc-body">
-      <div class="chat" id="npc-chat"></div>
-      <input id="npc-input" class="npc-input" placeholder="先写下你自己的答案，再让学伴追问…">
-      <div class="row-btns">
-        <button class="btn small" id="npc-ask">让学伴追问</button>
-        <button class="btn small ghost" id="npc-mode">模式：只追问</button>
+      <div class="npc-modes" id="npc-modes">
+        <button class="btn small on" data-mode="ask" type="button">只追问</button>
+        <button class="btn small" data-mode="review" type="button">批改</button>
       </div>
-      <div class="npc-tip">学伴默认不给答案。切到"批改"模式才会评价你的作答。</div>
+      <div class="chat" id="npc-chat"></div>
+      <textarea id="npc-input" class="npc-input" rows="2"
+                placeholder="先写下你自己的答案，再让学伴追问…（Ctrl/⌘ + Enter 发送）"></textarea>
+      <div class="row-btns">
+        <button class="btn small primary" id="npc-ask">发送</button>
+        <button class="btn small ghost" id="npc-clear">清空</button>
+        <button class="btn small ghost" id="npc-export">导出</button>
+      </div>
+      <div class="npc-tip">学伴默认不给答案。切到「批改」模式才会评价你的作答。</div>
     </div>
   </aside>
 

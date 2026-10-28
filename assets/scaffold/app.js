@@ -36,8 +36,13 @@ var App = (function () {
       if (el) el.classList.toggle("hidden", k !== v);
     });
     document.querySelectorAll(".tab").forEach(function (t) {
-      t.classList.toggle("active", t.dataset.view === v);
+      var on = t.dataset.view === v;
+      t.classList.toggle("active", on);
+      /* 视觉上用 .active，无障碍上要让读屏知道「当前在哪一页」 */
+      if (on) t.setAttribute("aria-current", "page");
+      else t.removeAttribute("aria-current");
     });
+    document.body.dataset.view = v;
     if (v === "map") renderMap();
     if (v === "recall") renderRecall();
     if (v === "wall") renderWall();
@@ -73,10 +78,11 @@ var App = (function () {
           /* 已通关的行有分数就够了，再挂一个「已通关」是同义重复 */
           (rec && rec.done ? "" : '<span class="badge">' + (lock ? "未解锁" : "可挑战") + '</span>') + '</li>';
       });
-      if (!lvs.length) html += '<li class="lvitem" style="cursor:default"><span class="lvname">闪卡训练区 · 去「今日复习」</span></li>';
+      if (!lvs.length) html += '<li class="lvitem plain"><span class="lvname">闪卡训练区 · 去「今日复习」</span></li>';
       html += '</ul></div>';
     });
     $("map-grid").innerHTML = html;
+    layoutMap();
     document.querySelectorAll(".lvitem[data-lv]").forEach(function (li) {
       li.onclick = function () {
         if (li.classList.contains("locked")) { toast("先通关上一关：顺序是设计变量，先编码后提取。"); return; }
@@ -86,6 +92,39 @@ var App = (function () {
       li.onkeydown = function (e) {
         if (e.key === "Enter" || e.key === " ") { e.preventDefault(); li.click(); }
       };
+    });
+  }
+
+  /* 地图瀑布流：grid-auto-rows 是 8px 的「秒表刻度」，每张卡按实测高度占若干行，
+     并且显式放进当前最矮的那一列——只算行跨度（不指定列）仍会按行对齐，
+     高矮差一大就出现空洞。
+     （不用 CSS columns：WebKit 不会平衡多列，卡片会全堆进第一列。） */
+  var MAP_ROW = 8, MAP_GAP = 16;
+  function layoutMap() {
+    var map = $("map-grid");
+    /* 隐藏时（别的视图里 resize）量到的都是 0，直接跳过，回到地图会重新 renderMap */
+    if (!map || !map.children.length || map.offsetParent === null) return;
+    var cards = [].slice.call(map.children);
+    var i;
+    /* 1) 全部复位成「按内容高度」，再量一次真实高度；顺序反了会量到被压扁的高度 */
+    for (i = 0; i < cards.length; i++) {
+      cards[i].style.gridColumn = "";
+      cards[i].style.gridRow = "auto";
+    }
+    map.style.gridAutoRows = "auto";
+    var hs = cards.map(function (c) { return c.getBoundingClientRect().height; });
+    map.style.gridAutoRows = "";
+    /* 2) 依次放进当前最矮的一列（等宽时靠左，保证顺序感） */
+    var cols = getComputedStyle(map).gridTemplateColumns.split(" ").filter(Boolean).length || 1;
+    var rows = [];
+    for (i = 0; i < cols; i++) rows.push(0);
+    cards.forEach(function (c, k) {
+      var span = Math.max(1, Math.ceil((hs[k] + MAP_GAP) / (MAP_ROW + MAP_GAP)));
+      var col = 0;
+      for (var j = 1; j < cols; j++) if (rows[j] < rows[col]) col = j;
+      c.style.gridColumn = String(col + 1);
+      c.style.gridRow = (rows[col] + 1) + " / span " + span;
+      rows[col] += span;
     });
   }
 
@@ -282,28 +321,37 @@ var App = (function () {
     return false;
   }
 
-  /* ---- 教材关：先读懂，再谈练 ---- */
+  /* ---- 教材关：先读懂，再谈练 ----
+     六段内容各给一种块底色：钩子=品红、类比=紫、例子=绿、图示=青、数字=金、检查=蓝。
+     长文字一律走 .rd-p（楷体长文层），块标题走屏方——两类字各自做自己的事。 */
   function nl(t) { return esc(t).replace(/\n/g, "<br>"); }
+  /* 内容里常写「关键数字：d≈0.5…」，而块标题已经写了「关键数字」——
+     重复一次就等于把标签念两遍。这里只切掉与块标题同名的那个前缀。 */
+  function cutLabel(t, label) {
+    var s = String(t || "");
+    var m = s.match(/^\s*[【\[]?([^】\]]{1,10})[】\]]?\s*[：:]\s*/);
+    return (m && label && m[1].indexOf(label) >= 0) ? s.slice(m[0].length) : s;
+  }
   function renderLesson(stg, step, act) {
     var ls = stg.lesson;
     var head = '<div class="lesson-step">教材 ' + (cur.idx + 1) + " / 4</div>";
     var body = "", btn = "";
     if (step === "hook") {
       body = "<h2>" + esc(ls.title) + "</h2>" +
-        '<div class="material hook">' + esc(ls.hook) + "</div>" +
-        '<div class="essence">一句话本质：' + esc(ls.essence) + "</div>";
+        '<div class="material hook"><p class="rd-p">' + nl(ls.hook) + "</p></div>" +
+        '<div class="essence"><span class="eb">一句话本质</span>' + nl(ls.essence) + "</div>";
       btn = '<button class="btn primary" id="ls-next">继续 →</button>';
     } else if (step === "body") {
-      body = '<div class="blk"><div class="blk-t">生活类比</div>' + esc(ls.analogy) + "</div>" +
-        '<div class="blk"><div class="blk-t">具体例子</div>' + esc(ls.example) + "</div>" +
-        '<div class="blk"><div class="blk-t">常见误解</div>' + esc(ls.counter) + "</div>";
+      body = '<div class="blk ana"><div class="blk-t">生活类比</div><p class="rd-p">' + nl(ls.analogy) + "</p></div>" +
+        '<div class="blk eg"><div class="blk-t">具体例子</div><p class="rd-p">' + nl(ls.example) + "</p></div>" +
+        '<div class="blk mis"><div class="blk-t">常见误解</div><p class="rd-p">' + nl(ls.counter) + "</p></div>";
       btn = '<button class="btn primary" id="ls-next">继续 →</button>';
     } else if (step === "number") {
-      body = '<div class="blk"><div class="blk-t">一图流</div><pre class="viz">' + nl(ls.visual) + "</pre></div>" +
-        '<div class="blk"><div class="blk-t">关键数字</div>' + esc(ls.number) + "</div>";
+      body = '<div class="blk der"><div class="blk-t">一图流</div><pre class="viz">' + nl(ls.visual) + "</pre></div>" +
+        '<div class="blk recap"><div class="blk-t">关键数字</div><p class="rd-p">' + nl(cutLabel(ls.number, "关键数字")) + "</p></div>";
       btn = '<button class="btn primary" id="ls-next">做个小检查 →</button>';
     } else {
-      body = '<div class="blk"><div class="blk-t">出门检查</div>' + esc(ls.check.q) + "</div>" +
+      body = '<div class="blk def"><div class="blk-t">出门检查</div><p class="rd-p">' + nl(ls.check.q) + "</p></div>" +
         '<div class="opts" id="opts"></div>';
       btn = "";
     }
@@ -758,16 +806,90 @@ var App = (function () {
     } catch (e) { toast("复制失败，请手动选择文本"); }
   }
 
-  /* ---------- NPC 学伴 ---------- */
+  /* ---------- NPC 学伴 ----------
+     浮窗 330px 在 PC 上看推导时经常憋屈：点标题栏的「⤢」把面板铺到右侧整屏高，
+     正文让出等宽，形成左右分屏。偏好存本地，下次打开还是分屏。 */
+  var SPLIT_KEY = "learn_npc_split_v1";
+  var npcSplitWant = false;
+
+  function npcSplitWidth() {
+    var w = window.innerWidth || 1200;
+    return Math.max(340, Math.min(Math.round(w * 0.44), 660));
+  }
+  function npcSplitOn() { return document.body.classList.contains("npc-split"); }
+
+  function applyNpcSplit() {
+    var narrow = window.matchMedia("(max-width:900px)").matches;
+    var on = npcSplitWant && !narrow;      /* 手机上分屏没意义，自动降级成浮窗 */
+    document.body.classList.toggle("npc-split", on);
+    $("npc").classList.toggle("full", on);
+    if (on) $("npc").classList.add("open");
+    document.documentElement.style.setProperty("--npc-split", npcSplitWidth() + "px");
+    var b = $("npc-expand");
+    if (b) {
+      b.textContent = on ? "⤡" : "⤢";
+      b.title = on ? "收起：学伴回到右下角浮窗" : "展开为分屏：学伴铺在右侧，和网页并排看";
+      b.setAttribute("aria-label", on ? "收起学伴面板" : "展开学伴面板为分屏");
+    }
+    /* 分屏会改正文宽度，瀑布流的列数跟着变，得重排地图 */
+    if (cur.view === "map") layoutMap();
+  }
+  function setNpcSplit(v) {
+    npcSplitWant = !!v;
+    applyNpcSplit();
+    try { localStorage.setItem(SPLIT_KEY, npcSplitWant ? "1" : "0"); } catch (e) {}
+    toast(npcSplitWant && npcSplitOn()
+      ? "学伴已铺到右侧 · 按 Esc 或点「⤡」收起"
+      : (npcSplitWant ? "屏幕太窄，暂用浮窗模式" : "学伴已收回右下角"));
+  }
+
+  function setNpcMode(m, quiet) {
+    npcMode = m;
+    document.querySelectorAll("#npc-modes .btn").forEach(function (b) {
+      b.classList.toggle("on", b.dataset.mode === m);
+      b.setAttribute("aria-pressed", b.dataset.mode === m ? "true" : "false");
+    });
+    if (!quiet) toast(m === "ask" ? "只追问：学伴不会给你答案" : "批改：会对照关键点评价你的作答");
+  }
+
   function initNpc() {
-    $("npc-toggle").onclick = function () { $("npc").classList.toggle("open"); };
-    $("npc-mode").onclick = function () {
-      npcMode = npcMode === "ask" ? "review" : "ask";
-      $("npc-mode").textContent = "模式：" + (npcMode === "ask" ? "只追问" : "批改");
-      toast(npcMode === "ask" ? "只追问模式：学伴不会给你答案" : "批改模式：会对照关键点评价你的作答");
+    $("npc-toggle").onclick = function () {
+      if (npcSplitOn()) return;            /* 分屏下标题栏不再折叠，避免点错收起 */
+      $("npc").classList.toggle("open");
     };
+    var exp = $("npc-expand");
+    if (exp) exp.onclick = function (e) {
+      if (e && e.stopPropagation) e.stopPropagation();
+      setNpcSplit(!npcSplitWant);
+    };
+    try { npcSplitWant = localStorage.getItem(SPLIT_KEY) === "1"; } catch (e) { npcSplitWant = false; }
+    applyNpcSplit();
+    window.addEventListener("resize", applyNpcSplit);
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && npcSplitOn()) setNpcSplit(false);
+    });
+    document.querySelectorAll("#npc-modes .btn").forEach(function (b) {
+      b.onclick = function () { setNpcMode(b.dataset.mode); };
+    });
     $("npc-ask").onclick = askNpc;
-    $("npc-input").onkeydown = function (e) { if (e.key === "Enter") askNpc(); };
+    $("npc-clear").onclick = function () {
+      $("npc-chat").innerHTML = "";
+      greetingNpc();
+    };
+    $("npc-export").onclick = function () {
+      var lines = [];
+      $("npc-chat").querySelectorAll("div").forEach(function (d) {
+        lines.push((d.classList.contains("me") ? "我：" : "学伴：") + d.textContent);
+      });
+      download("learn_os_npc.txt", lines.join("\n\n"), "text/plain;charset=utf-8");
+    };
+    $("npc-input").onkeydown = function (e) {
+      if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); askNpc(); }
+    };
+    setNpcMode("ask", true);
+    greetingNpc();
+  }
+  function greetingNpc() {
     say("ai", "我在。规则是：你先写答案，我只追问，不替你补充。想让我批改，就切到「批改」模式。");
   }
   function say(who, txt) {
@@ -818,20 +940,51 @@ var App = (function () {
     setTimeout(function () { URL.revokeObjectURL(a.href); document.body.removeChild(a); }, 100);
   }
 
-  /* ---------- Toast ---------- */
+  /* ---------- Toast ----------
+     样式全在 styles.css（.toast / .toast.on），这里只管内容与计时。
+     内联样式写在 JS 里等于把设计规则搬出样式表，改一次要搜两处。 */
   var toastTimer = null;
   function toast(msg) {
     var t = $("toast");
     if (!t) {
       t = document.createElement("div");
       t.id = "toast";
-      t.style.cssText = "position:fixed;left:50%;bottom:80px;transform:translateX(-50%);background:#241a52;border:1px solid #3a2b7a;color:#ece9ff;padding:10px 16px;border-radius:10px;z-index:99;font-size:13px;max-width:80vw;text-align:center;box-shadow:0 8px 30px rgba(0,0,0,.5)";
+      t.className = "toast";
+      t.setAttribute("role", "status");
+      t.setAttribute("aria-live", "polite");
       document.body.appendChild(t);
     }
     t.textContent = msg;
-    t.style.display = "block";
+    /* 强制回流，让同一句连续两次提示也能重新播动画 */
+    void t.offsetWidth;
+    t.classList.add("on");
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(function () { t.style.display = "none"; }, 2600);
+    toastTimer = setTimeout(function () { t.classList.remove("on"); }, 2600);
+  }
+
+  /* ---------- 阅读模式（大字号排版，持久化） ----------
+     只作用在 #lv-stage 里的长文，不动 HUD 与按钮——否则整页缩放会失去层级。 */
+  var READ_KEY = "learn_readmode_v1";
+  function applyReadMode() {
+    var on = false;
+    try { on = localStorage.getItem(READ_KEY) === "1"; } catch (e) {}
+    document.body.classList.toggle("readmode", on);
+    var b = $("readmode-toggle");
+    if (b) {
+      b.textContent = on ? "阅读模式：开" : "阅读模式：关";
+      b.setAttribute("aria-pressed", on ? "true" : "false");
+    }
+  }
+  function bindReadMode() {
+    var b = $("readmode-toggle");
+    if (!b) return;
+    applyReadMode();
+    b.onclick = function () {
+      var on = !document.body.classList.contains("readmode");
+      try { localStorage.setItem(READ_KEY, on ? "1" : "0"); } catch (e) {}
+      applyReadMode();
+      toast(on ? "阅读模式已开：大字号、宽行距，重按可切回" : "已切回标准排版");
+    };
   }
 
   /* ---------- 启动 ---------- */
@@ -842,6 +995,7 @@ var App = (function () {
     renderHud();
     bindRecall();
     initNpc();
+    bindReadMode();
     document.querySelectorAll(".tab").forEach(function (t) {
       t.onclick = function () { showView(t.dataset.view); };
     });
@@ -852,6 +1006,15 @@ var App = (function () {
       if (confirm("确定清空全部进度？此操作不可撤销。")) { Engine.reset(); S = Engine.state(); renderHud(); renderWall(); }
     };
     showView("map");
+    /* 瀑布流靠实测高度：换宽度、字体回来后行高变化，都得重算一次 */
+    var rt = null;
+    window.addEventListener("resize", function () {
+      clearTimeout(rt);
+      rt = setTimeout(layoutMap, 160);
+    });
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(function () { layoutMap(); });
+    }
   }
 
   return { init: init, toast: toast, showView: showView };

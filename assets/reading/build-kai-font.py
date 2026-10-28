@@ -38,18 +38,31 @@ SCAN_EXT = (".html", ".htm", ".js", ".css", ".json", ".md")
 
 
 def find_kaiti():
-    """找出系统楷体 TTC：mdfind 优先，退到 AssetsV2 全盘 glob。"""
+    """找出系统楷体 TTC。
+
+    坑：macOS 在 Fonts/Subsets/ 下放了一个 58KB 的「按需字体占位包」，
+    mdfind 会先返回它。用它子集化只能拿到 3KB 字体、大半字缺字形，
+    页面看起来「换了个字体」但其实是回退字体。判定标准只有一条：文件够大。
+    """
+    cands = []
     try:
         out = subprocess.run(["mdfind", "-name", "Kaiti.ttc"],
                              capture_output=True, text=True, timeout=8).stdout
-        for line in out.splitlines():
-            if line.endswith("Kaiti.ttc") and os.path.exists(line):
-                return line
+        cands += [l for l in out.splitlines() if l.endswith("Kaiti.ttc")]
     except Exception:
         pass
-    for p in glob.glob("/System/Library/AssetsV2/com_apple_MobileAsset_Font*/*/AssetData/Kaiti.ttc"):
-        return p
-    return None
+    cands += glob.glob("/System/Library/AssetsV2/com_apple_MobileAsset_Font*/*/AssetData/Kaiti.ttc")
+
+    good = []
+    for p in cands:
+        if not os.path.exists(p) or "/Fonts/Subsets/" in p:
+            continue
+        try:
+            if os.path.getsize(p) >= 5 * 1024 * 1024:   # 完整楷体 ~100MB
+                good.append(p)
+        except OSError:
+            pass
+    return max(good, key=os.path.getsize) if good else None
 
 
 def collect_chars(root, out_name):
