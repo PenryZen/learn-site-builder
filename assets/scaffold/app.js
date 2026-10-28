@@ -22,7 +22,7 @@ var App = (function () {
     var r = 18, c = 2 * Math.PI * r;
     var p = Math.max(0, Math.min(100, pct));
     return '<svg class="ring" viewBox="0 0 46 46">' +
-      '<circle cx="23" cy="23" r="' + r + '" fill="none" stroke="#2a1f5e" stroke-width="5"/>' +
+      '<circle cx="23" cy="23" r="' + r + '" fill="none" stroke="#332b5e" stroke-width="4.5"/>' +
       '<circle cx="23" cy="23" r="' + r + '" fill="none" stroke="' + color + '" stroke-width="5" stroke-linecap="round" ' +
       'stroke-dasharray="' + (c * p / 100).toFixed(1) + ' ' + c.toFixed(1) + '" transform="rotate(-90 23 23)"/>' +
       '<text x="23" y="27" text-anchor="middle" font-size="11" fill="#ece9ff">' + p + '</text></svg>';
@@ -66,8 +66,9 @@ var App = (function () {
       lvs.forEach(function (lv) {
         var rec = S.levels[lv.id];
         var lock = !Engine.unlocked(lv);
-        html += '<li class="lvitem ' + (lock ? "locked" : "") + " " + (rec && rec.done ? "done" : "") + '" data-lv="' + lv.id + '">' +
-          '<span class="lvname">' + (lock ? "🔒 " : "") + lv.name + '</span>' +
+        html += '<li class="lvitem ' + (lock ? "locked" : "") + " " + (rec && rec.done ? "done" : "") + '" data-lv="' + lv.id + '"' +
+          (lock ? ' role="link" aria-disabled="true"' : ' role="button" tabindex="0"') + '>' +
+          '<span class="lvname">' + lv.name + '</span>' +
           (rec && rec.best ? '<span class="best">' + rec.best + '%</span>' : "") +
           '<span class="badge">' + (rec && rec.done ? "已通关" : (lock ? "未解锁" : "可挑战")) + '</span></li>';
       });
@@ -79,6 +80,10 @@ var App = (function () {
       li.onclick = function () {
         if (li.classList.contains("locked")) { toast("先通关上一关：顺序是设计变量，先编码后提取。"); return; }
         openLevel(li.dataset.lv);
+      };
+      /* Tab 能走到每一关，Enter / 空格进入 */
+      li.onkeydown = function (e) {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); li.click(); }
       };
     });
   }
@@ -283,21 +288,21 @@ var App = (function () {
     var head = '<div class="lesson-step">教材 ' + (cur.idx + 1) + " / 4</div>";
     var body = "", btn = "";
     if (step === "hook") {
-      body = "<h4>" + esc(ls.title) + "</h4>" +
-        '<div class="material hook">🤔 ' + esc(ls.hook) + "</div>" +
+      body = "<h2>" + esc(ls.title) + "</h2>" +
+        '<div class="material hook">' + esc(ls.hook) + "</div>" +
         '<div class="essence">一句话本质：' + esc(ls.essence) + "</div>";
       btn = '<button class="btn primary" id="ls-next">继续 →</button>';
     } else if (step === "body") {
-      body = '<div class="blk"><div class="blk-t">🎯 生活类比</div>' + esc(ls.analogy) + "</div>" +
-        '<div class="blk"><div class="blk-t">📌 具体例子</div>' + esc(ls.example) + "</div>" +
-        '<div class="blk"><div class="blk-t">⚠️ 常见误解</div>' + esc(ls.counter) + "</div>";
+      body = '<div class="blk"><div class="blk-t">生活类比</div>' + esc(ls.analogy) + "</div>" +
+        '<div class="blk"><div class="blk-t">具体例子</div>' + esc(ls.example) + "</div>" +
+        '<div class="blk"><div class="blk-t">常见误解</div>' + esc(ls.counter) + "</div>";
       btn = '<button class="btn primary" id="ls-next">继续 →</button>';
     } else if (step === "number") {
-      body = '<div class="blk"><div class="blk-t">🖼 一图流</div><pre class="viz">' + nl(ls.visual) + "</pre></div>" +
-        '<div class="blk"><div class="blk-t">🔢 关键数字</div>' + esc(ls.number) + "</div>";
+      body = '<div class="blk"><div class="blk-t">一图流</div><pre class="viz">' + nl(ls.visual) + "</pre></div>" +
+        '<div class="blk"><div class="blk-t">关键数字</div>' + esc(ls.number) + "</div>";
       btn = '<button class="btn primary" id="ls-next">做个小检查 →</button>';
     } else {
-      body = '<div class="blk"><div class="blk-t">🚪 出门检查</div>' + esc(ls.check.q) + "</div>" +
+      body = '<div class="blk"><div class="blk-t">出门检查</div>' + esc(ls.check.q) + "</div>" +
         '<div class="opts" id="opts"></div>';
       btn = "";
     }
@@ -338,7 +343,7 @@ var App = (function () {
   function renderEncode(it, act) {
     $("lv-stage").innerHTML =
       '<div class="material">' + esc(it.material) + "</div>" +
-      "<h4>" + esc(it.q) + "</h4>" +
+      "<h2>" + esc(it.q) + "</h2>" +
       '<div class="opts" id="opts"></div>';
     var box = $("opts");
     it.opts.forEach(function (o, i) {
@@ -420,7 +425,7 @@ var App = (function () {
   /* ---- 主动回忆关 ---- */
   function renderRecallQ(it, act) {
     $("lv-stage").innerHTML =
-      "<h4>" + esc(it.q) + "</h4>" +
+      "<h2>" + esc(it.q) + "</h2>" +
       '<div class="pill hot">闭卷 · 不许翻材料</div>' +
       '<textarea class="ans" id="ans" placeholder="凭回忆写出你的答案…"></textarea>' +
       confRow();
@@ -483,7 +488,7 @@ var App = (function () {
   function renderFeynman(it, act) {
     $("lv-stage").innerHTML =
       '<div class="pill hot">听众：' + esc(it.audience) + "</div>" +
-      "<h4>请讲解：" + esc(it.topic) + "</h4>" +
+      "<h2>请讲解：" + esc(it.topic) + "</h2>" +
       '<textarea class="ans" id="ans" placeholder="用最简单的语言讲一遍，别用术语…"></textarea>' +
       '<p class="hint">判定通过：不少于 60 字、不含术语、至少有一个例子。讲不通的地方就是你的漏洞。</p>';
     act.innerHTML = '<button class="btn primary" id="submit">讲给学伴听</button>';
@@ -524,9 +529,9 @@ var App = (function () {
         return '<span class="pill' + (i === cat ? " hot" : "") + '">' + c + "</span>";
       }).join("") + "</div>" +
       '<div class="material">' + esc(it.scene) + "</div>" +
-      "<h4>第一步 · 先判别：这属于哪一类问题？</h4>" +
+      "<h2>第一步 · 先判别：这属于哪一类问题？</h2>" +
       '<div class="opts" id="cat-opts"></div>' +
-      '<div id="step2" class="hidden"><h4>第二步 · 该用哪种做法？</h4><div class="opts" id="act-opts"></div></div>';
+      '<div id="step2" class="hidden"><h2>第二步 · 该用哪种做法？</h2><div class="opts" id="act-opts"></div></div>';
     var cbox = $("cat-opts");
     CATS.forEach(function (c, i) {
       var b = document.createElement("button");
@@ -573,7 +578,7 @@ var App = (function () {
   function renderMistake(it, act) {
     $("lv-stage").innerHTML =
       '<div class="material">' + esc(it.ans) + "</div>" +
-      "<h4>这个错误属于哪一类？</h4>" +
+      "<h2>这个错误属于哪一类？</h2>" +
       '<div class="opts" id="opts"></div>';
     var box = $("opts");
     it.opts.forEach(function (o, i) {
@@ -602,9 +607,9 @@ var App = (function () {
   function renderCreate(it, act) {
     var list = it.checks.map(function (c) { return "· " + c.label; }).join("<br>");
     $("lv-stage").innerHTML =
-      "<h4>" + esc(it.title) + "</h4>" +
+      "<h2>" + esc(it.title) + "</h2>" +
       '<div class="material">' + esc(it.brief) + "</div>" +
-      "<h4>六项硬指标</h4><p style='font-size:13px;color:var(--dim)'>" + list + "</p>" +
+      "<h2>六项硬指标</h2><p style='font-size:13px;color:var(--dim)'>" + list + "</p>" +
       '<textarea class="ans" id="ans" placeholder="例如：主题=考研英语阅读。第1天编码…第3天闭卷复述…第7天迁移练习…先独立作答再由AI批改…"></textarea>';
     act.innerHTML = '<button class="btn primary" id="submit">提交方案</button>';
     $("submit").onclick = function () {
@@ -654,13 +659,13 @@ var App = (function () {
     var pct = Math.round((cur.score / cur.total) * 100);
     var calib = Engine.calibration();
     $("lv-stage").innerHTML =
-      "<h4>关卡结算</h4>" +
+      "<h2>关卡结算</h2>" +
       '<div class="material">得分 <b>' + cur.score + " / " + cur.total + "</b>（" + pct + "%）· 通关线 80%<br>" +
-      (rec.done ? "✅ 已通关，解锁下一区域。" : "❌ 未达 80%，同一类卡壳点还会再出现——这正是复盘阶段要处理的。") +
+      (rec.done ? "已通关，解锁下一区域。" : "未达 80%，同一类卡壳点还会再出现——这正是复盘阶段要处理的。") +
       "<br>历史最佳：" + rec.best + "% · 尝试次数：" + rec.tries +
       (calib.n ? "<br>当前校准误差：<b>" + calib.err.toFixed(2) + "</b>（样本 " + calib.n + "）" : "") +
       "</div>" +
-      "<h4>这一关训练的是</h4><p style='font-size:13px;color:var(--dim)'>" + esc(lv.method) +
+      "<h2>这一关训练的是</h2><p style='font-size:13px;color:var(--dim)'>" + esc(lv.method) +
       "。回到地图，下一关会把刚才提取出来的内容推进到下一阶段。</p>";
     $("lv-actions").innerHTML = '<button class="btn primary" id="back-map">返回地图</button>' +
       '<button class="btn" id="go-due">去今日复习</button>';
@@ -714,7 +719,7 @@ var App = (function () {
     });
     $("lib-grid").innerHTML = list.map(function (m) {
       return '<div class="mcard t' + m.tier + '">' +
-        "<h4><span>" + esc(m.name) + '</span><span class="rate">' + esc(m.rate) + "</span></h4>" +
+        "<h2><span>" + esc(m.name) + '</span><span class="rate">' + esc(m.rate) + "</span></h2>" +
         '<div class="tiername">' + TIERS[m.tier] + "</div>" +
         '<div class="num">效应量 / 数字：' + esc(m.d) + "</div>" +
         '<div class="why">' + esc(m.principle) + "</div>" +
@@ -730,7 +735,7 @@ var App = (function () {
   /* ---------- 提示词 ---------- */
   function renderPrompts() {
     $("prompt-grid").innerHTML = (DATA.prompts || []).map(function (p, i) {
-      return '<div class="pcard"><h4>' + esc(p.m) + '</h4><div class="role">AI 角色：' + esc(p.role) + "</div>" +
+      return '<div class="pcard"><h2>' + esc(p.m) + '</h2><div class="role">AI 角色：' + esc(p.role) + "</div>" +
         "<pre>" + esc(p.p) + "</pre>" +
         '<button class="btn small" data-copy="' + i + '">复制提示词</button></div>';
     }).join("");
