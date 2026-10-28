@@ -91,6 +91,14 @@ Engine.isLearned('c01')          // 单卡状态
 DATA.lessons.map(l => l.teaches) // 教材覆盖情况
 ```
 
+改过界面或字体的话，再加三条（WebKit 里量，别用 Chromium 代替）：
+
+```js
+getComputedStyle(document.querySelector('.map')).gridTemplateColumns  // 应为两列（不是一列）
+[...document.fonts].filter(f => f.family === 'KaiSubset')             // 400 档 status=loaded
+document.documentElement.scrollWidth - innerWidth                     // 360/400/768/1280 都为 0
+```
+
 ## 八、可用的样式层（写内容时直接用，别再自造 class）
 
 关卡正文是一堆字符串拼出来的，视觉全靠 class。下面这些在 `styles.css` 里已经定义好：
