@@ -238,6 +238,8 @@ var App = (function () {
     cur.level = lv; cur.idx = 0; cur.score = 0; cur.hintUsed = false; cur.predicted = null; cur.noScore = false;
     cur.total = lv.n;
     cur.stage = buildStage(lv);
+    /* 教材关按页推进（4 页），进度条与滑轨都按页数算 */
+    cur.pageTotal = (cur.stage.kind === "lesson" && cur.stage.items.length) ? cur.stage.items.length : 0;
     showView("level");
     $("lv-tag").textContent = lv.method;
     $("lv-title").textContent = lv.name;
@@ -277,8 +279,125 @@ var App = (function () {
   }
 
   function progress() {
-    var p = cur.total ? (cur.idx / cur.total) * 100 : 0;
+    var denom = cur.pageTotal || cur.total;
+    var p = 0;
+    /* 按页推进的关（教材）：人在第 k 页，进度就该到 k/n，而不是 (k-1)/n */
+    if (cur.pageTotal) p = (Math.min(cur.idx + 1, denom) / denom) * 100;
+    else if (denom) p = (cur.idx / denom) * 100;
     $("lv-progress").style.width = p + "%";
+    paintScrub();
+  }
+
+  /* ---------- 翻页：往回也要有个按钮 ----------
+     goPage 是唯一入口：上一页按钮、滑轨点击、键盘都走它。 */
+  function goPage(i) {
+    var n = (cur.stage && cur.stage.items) ? cur.stage.items.length : 0;
+    if (!n) return;
+    i = Math.max(0, Math.min(n - 1, i));
+    if (i === cur.idx) return;
+    cur.idx = i;
+    renderStage();
+  }
+  function prevBtn(id) {
+    if (cur.idx <= 0) return "";
+    return '<button class="btn ghost" id="' + (id || "rd-prev") + '">← 上一页</button>';
+  }
+  function bindPrev(id) {
+    var b = $(id || "rd-prev");
+    if (b) b.onclick = function () { goPage(cur.idx - 1); };
+  }
+
+  /* 页面标签：教材关的四步是字符串，给它们起个读者看得懂的名字 */
+  var PAGE_T = { hook: "钩子与本质", body: "类比 · 例子 · 误解", number: "一图流与数字", check: "出门检查" };
+  function pageLabel(it) {
+    if (it === null || it === undefined) return "";
+    if (typeof it === "string") return PAGE_T[it] || "";
+    if (it.h) return String(it.h).replace(/（续）$/, "");
+    return PAGE_T[it.t] || "";
+  }
+  function scrubItems() {
+    if (!cur.stage || cur.stage.kind !== "lesson") return null;
+    return (cur.stage.items && cur.stage.items.length) ? cur.stage.items : null;
+  }
+  function paintScrub() {
+    var sc = $("rd-scrub"), ticks = $("rd-ticks"), items = scrubItems();
+    if (!sc) return;
+    var n = items ? items.length : 0;
+    sc.classList.toggle("static", !n);
+    if (n) {
+      sc.setAttribute("aria-valuemax", n);
+      sc.setAttribute("aria-valuenow", cur.idx + 1);
+      var lab = pageLabel(items[cur.idx]);
+      sc.setAttribute("aria-valuetext", "第 " + (cur.idx + 1) + " 页，共 " + n + " 页" + (lab ? "：" + lab : ""));
+    } else {
+      sc.setAttribute("aria-valuenow", 1);
+      sc.setAttribute("aria-valuetext", "");
+    }
+    if (ticks) {
+      var html = "";
+      for (var i = 1; i < n; i++) {
+        if (pageLabel(items[i]) && pageLabel(items[i]) !== pageLabel(items[i - 1])) {
+          html += '<i class="rd-tick" style="left:' + (i / n * 100).toFixed(3) + '%"></i>';
+        }
+      }
+      if (ticks.innerHTML !== html) ticks.innerHTML = html;
+    }
+  }
+
+  /* 滑轨交互：悬停出提示、点击跳页、方向键翻页 */
+  function initScrub() {
+    var sc = $("rd-scrub"), tip = $("rd-tip"), seg = $("rd-seg"), cu = $("rd-cursor");
+    if (!sc) return;
+    function pageAt(clientX) {
+      var items = scrubItems();
+      if (!items) return -1;
+      var r = sc.getBoundingClientRect();
+      var t = (clientX - r.left) / Math.max(1, r.width);
+      return Math.max(0, Math.min(items.length - 1, Math.floor(t * items.length)));
+    }
+    function show(clientX) {
+      var items = scrubItems();
+      if (!items) return;
+      var i = pageAt(clientX), r = sc.getBoundingClientRect();
+      var x = Math.max(0, Math.min(r.width, clientX - r.left));
+      var lab = pageLabel(items[i]);
+      tip.innerHTML = "<b>" + (i + 1) + " / " + items.length + "</b>" +
+        (lab ? "<span>" + esc(lab) + "</span>" : "") +
+        (i === cur.idx ? "<i>当前</i>" : "");
+      /* 贴边时把提示框推回容器内，别溢出阅读列 */
+      var half = tip.offsetWidth / 2;
+      tip.style.left = Math.max(half + 2, Math.min(r.width - half - 2, x)) + "px";
+      tip.classList.add("on");
+      /* 预览块只做「游标光点」，不做「这一页的整段」：
+         4 页的教材关一页就是 25%，整段高亮会变成第二根进度条。 */
+      var bw = Math.min(100 / items.length, 9);
+      seg.style.width = bw + "%";
+      seg.style.left = Math.max(0, Math.min(100 - bw, (i + 0.5) * 100 / items.length - bw / 2)) + "%";
+      seg.classList.add("on");
+      cu.style.left = x + "px";
+      cu.classList.add("on");
+    }
+    function hide() {
+      tip.classList.remove("on");
+      seg.classList.remove("on");
+      cu.classList.remove("on");
+    }
+    sc.addEventListener("pointermove", function (e) { show(e.clientX); });
+    sc.addEventListener("pointerleave", hide);
+    sc.addEventListener("click", function (e) {
+      if (!scrubItems()) return;
+      var i = pageAt(e.clientX);
+      if (i >= 0 && i !== cur.idx) { hide(); goPage(i); toast("到第 " + (i + 1) + " 页"); }
+    });
+    sc.addEventListener("keydown", function (e) {
+      var items = scrubItems();
+      if (!items) return;
+      var k = e.key;
+      if (k === "ArrowRight" || k === "ArrowDown") { e.preventDefault(); goPage(cur.idx + 1); }
+      else if (k === "ArrowLeft" || k === "ArrowUp") { e.preventDefault(); goPage(cur.idx - 1); }
+      else if (k === "Home") { e.preventDefault(); goPage(0); }
+      else if (k === "End") { e.preventDefault(); goPage(items.length - 1); }
+    });
   }
 
   function renderStage() {
@@ -360,7 +479,8 @@ var App = (function () {
       btn = "";
     }
     $("lv-stage").innerHTML = head + body;
-    act.innerHTML = btn;
+    act.innerHTML = prevBtn("ls-prev") + btn;
+    bindPrev("ls-prev");
     if (step === "number" && ls.fig && typeof VZ !== "undefined" && VZ.has(ls.fig)) {
       VZ.fig(ls.fig, $("ls-fig"));
     }
@@ -1003,6 +1123,7 @@ var App = (function () {
     bindRecall();
     initNpc();
     bindReadMode();
+    initScrub();
     document.querySelectorAll(".tab").forEach(function (t) {
       t.onclick = function () { showView(t.dataset.view); };
     });

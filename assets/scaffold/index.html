@@ -166,7 +166,18 @@
         <p id="lv-brief"></p>
         <div class="lv-method" id="lv-method"></div>
       </div>
-      <div class="progress-line"><div class="progress-bar" id="lv-progress"></div></div>
+      <!-- 阅读滑轨：既是进度，也是页码导航（悬停看页码+小节，点击/方向键跳页） -->
+      <div class="rd-scrub" id="rd-scrub" role="slider" tabindex="0"
+           aria-label="阅读进度，可跳页" aria-orientation="horizontal"
+           aria-valuemin="1" aria-valuemax="1" aria-valuenow="1">
+        <div class="rd-scrub-rail">
+          <span class="rd-scrub-seg" id="rd-seg"></span>
+          <div class="progress-bar" id="lv-progress"></div>
+          <span class="rd-scrub-ticks" id="rd-ticks"></span>
+          <i class="rd-scrub-cursor" id="rd-cursor"></i>
+        </div>
+        <div class="rd-tip" id="rd-tip"></div>
+      </div>
       <div class="stage" id="lv-stage"></div>
       <div class="row-btns" id="lv-actions"></div>
       <div class="feedback hidden" id="lv-feedback"></div>

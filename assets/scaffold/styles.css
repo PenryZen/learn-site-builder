@@ -247,8 +247,33 @@ a{color:var(--cyan);text-underline-offset:2px}
   background:rgba(62,232,240,.08);padding:3px 10px;border-radius:999px;margin-bottom:10px;letter-spacing:.04em}
 .lv-method{font-size:12.5px;color:var(--hint);margin-top:8px}
 .lv-method b{color:var(--mag);font-weight:700}
-.progress-line{height:4px;background:var(--surf3);border-radius:3px;overflow:hidden;margin-bottom:20px}
-.progress-bar{height:100%;width:0;background:var(--cyan);transition:width .3s}
+/* ---------- 阅读滑轨 ----------
+   视觉高度仍是 4px，命中区靠上下 padding 撑到 ~28px（触控下限 24px）。
+   悬停：出页码 + 小节名、一根青色游标、一段预览高亮；点击：跳到该页。
+   键盘：← → 单页、Home/End 首末页。这一段同时是 progress 与导航，
+   所以不做 hover 放大、不做阴影——它得一直在原地。 */
+.rd-scrub{position:relative;padding:12px 0;margin:-8px 0 14px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.rd-scrub.static{cursor:default}
+.rd-scrub:focus-visible{outline:2px solid var(--cyan);outline-offset:4px;border-radius:6px}
+.rd-scrub-rail{position:relative;height:4px;background:var(--surf3);border-radius:3px}
+.progress-bar{position:relative;z-index:2;height:100%;width:0;background:var(--cyan);border-radius:3px;
+  transition:width .28s cubic-bezier(.4,0,.2,1)}
+.rd-scrub-seg{position:absolute;z-index:1;top:-2px;height:8px;border-radius:4px;
+  background:rgba(62,232,240,.4);opacity:0;transition:opacity .12s,left .1s linear,width .1s linear}
+.rd-scrub-seg.on{opacity:1}
+.rd-scrub-ticks{position:absolute;left:0;right:0;top:0;height:0;pointer-events:none}
+.rd-tick{position:absolute;top:-3px;width:1px;height:10px;background:var(--line2)}
+.rd-scrub-cursor{position:absolute;z-index:3;top:-5px;width:2px;height:14px;margin-left:-1px;
+  background:var(--cyan);border-radius:2px;opacity:0;transition:opacity .12s}
+.rd-scrub-cursor.on{opacity:1}
+.rd-tip{position:absolute;z-index:20;bottom:27px;transform:translateX(-50%);white-space:nowrap;
+  background:var(--surf3);border:1px solid var(--line2);border-radius:9px;padding:6px 10px;
+  font-size:12px;line-height:1.5;color:var(--txt);pointer-events:none;
+  opacity:0;transition:opacity .12s;box-shadow:0 10px 26px rgba(4,2,16,.55)}
+.rd-tip.on{opacity:1}
+.rd-tip b{color:var(--cyan);font-weight:800;font-variant-numeric:tabular-nums;margin-right:8px}
+.rd-tip span{color:var(--txt)}
+.rd-tip i{font-style:normal;color:var(--dim);margin-left:8px}
 /* 关卡正文容器：不再套一层卡片，内容块自己就是表面 */
 .stage{background:transparent;border:0;border-radius:0;padding:0;min-height:180px}
 .stage h2,.stage h3{margin:0 0 10px;font-size:16px;font-weight:700;color:var(--txt);letter-spacing:0}

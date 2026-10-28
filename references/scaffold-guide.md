@@ -118,6 +118,7 @@ document.documentElement.scrollWidth - innerWidth                     // 360/400
 | 插图 | `bookfig` + `figcaption` | 白底图片 + 左对齐图注，图注可含公式 |
 | 交互图 | `figbox` / `fig-title` / `viz-chip` / `viz-btn` / `viz-readout` | 配合 `viz-core.js`，**加图看 `interactive-figures.md`** |
 | 朗读 | `ttsbar` / `rd-p.tts-on` / `ttscfg` | 配合 `assets/reading/tts.js` |
+| 阅读滑轨 | `rd-scrub` + `rd-tip` | 进度条兼页码导航：悬停出页码/小节，点击或 ← → 跳页；`app.js` 的 `initScrub()` 已绑好 |
 | 复习提示 | `resumebar` | 「回到上次位置」提示条 |
 | 标签 | `pill` / `pill hot` / `pill ok` / `tag-new` / `tag-ok` | 中性 / 品红 / 绿 / 未学 / 已学 |
 
