@@ -78,7 +78,27 @@ exec "$HOME/Library/Caches/ms-playwright/chromium-1223/chrome-mac-arm64/Google C
 - [ ] `:focus-visible` 真的出环（`el.matches(':focus-visible')` 为真、`outline` 解析成具体色）
 - [ ] 改完跑一遍原有回归（数据结构断言 + 端到端脚本），确认只是换了皮
 
-## Canvas 逐像素图的三个坑（曼德博这类）
+## 六、脚手架已经按这套规范改过（别再复制旧模板）
+
+`assets/scaffold/` 的 `index.html` / `styles.css` / `app.js` 现在是**规范版**：
+表面三级 token、无色条、无渐变、无光晕、HUD 信息带、`h1→h2` 层级、焦点环、未解锁固定色、
+关卡行的 `role/tabindex`、装饰性 emoji 已清理。
+
+所以新建站时不用再走一遍「从模板痕迹改到干净」——直接从脚手架开始，**默认就是对的**。
+反过来说：如果你手上还有一份 2026-10 之前复制的旧模板，它带着 19 条反模式
+（8 条色条、3 条渐变文字、2 条光晕、1 条径向光晕、3 条标题跳级、1 条低对比、1 条 11px 小字），
+别在它上面打补丁，直接从当前 scaffold 重新起。
+
+改脚手架本身时的自检（比读代码快）：
+
+```bash
+cd assets/scaffold
+npx impeccable detect index.html styles.css                     # 源码，应为 0
+IMPECCABLE_BROWSER=<chrome> npx impeccable detect --viewport 1280x900 http://127.0.0.1:PORT/
+IMPECCABLE_BROWSER=<chrome> npx impeccable detect --viewport 390x844  http://127.0.0.1:PORT/
+```
+
+## 七、Canvas 逐像素图的三个坑（曼德博这类）
 
 站里的交互图大多用 SVG，少数（曼德博、热图）用 canvas 逐像素写。这一类有三个只会「半坏不坏」的坑：
 

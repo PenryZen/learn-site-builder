@@ -85,7 +85,22 @@ Engine.isLearned('c01')          // 单卡状态
 DATA.lessons.map(l => l.teaches) // 教材覆盖情况
 ```
 
-## 八、想改引擎时
+## 八、样式与 demo 站点
+
+`assets/scaffold/styles.css` 已经是按 `ui-polish.md` 那套规范调过的版本（深色紫调、三级表面、
+无色条无渐变）。换学科时**不要动它**；真要改观感，先跑一遍 `impeccable detect`，改完再跑一遍。
+
+仓库里的 `docs/` 是「脚手架 + demo 数据」的在线演示（GitHub Pages 从这里发布）。
+它和 `assets/scaffold/` 是**复制关系**，改了 scaffold 的 `index.html / styles.css / app.js / engine.js`
+就要同步过去，否则演示站展示的还是旧样式：
+
+```bash
+cp assets/scaffold/{index.html,styles.css,engine.js,app.js} docs/
+cp assets/scaffold/data.demo.js docs/data.js
+cp assets/scaffold/lessons.demo.js docs/lessons.js
+```
+
+## 九、想改引擎时
 
 `engine.js` 暴露的 API：
 
