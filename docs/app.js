@@ -70,7 +70,8 @@ var App = (function () {
           (lock ? ' role="link" aria-disabled="true"' : ' role="button" tabindex="0"') + '>' +
           '<span class="lvname">' + lv.name + '</span>' +
           (rec && rec.best ? '<span class="best">' + rec.best + '%</span>' : "") +
-          '<span class="badge">' + (rec && rec.done ? "已通关" : (lock ? "未解锁" : "可挑战")) + '</span></li>';
+          /* 已通关的行有分数就够了，再挂一个「已通关」是同义重复 */
+          (rec && rec.done ? "" : '<span class="badge">' + (lock ? "未解锁" : "可挑战") + '</span>') + '</li>';
       });
       if (!lvs.length) html += '<li class="lvitem" style="cursor:default"><span class="lvname">闪卡训练区 · 去「今日复习」</span></li>';
       html += '</ul></div>';
