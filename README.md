@@ -118,9 +118,10 @@ references/
 ├── anti-patterns.md        常见反模式与交付前自检清单
 ├── ai-companion.md         AI 学伴集成（提示词、只追问不答）
 ├── ui-polish.md            界面打磨：五条硬规则 + 配色 token + 检测命令
-└── reading-experience.md   长篇精读站：公式排版 / 楷体内嵌 / 三引擎朗读 / 长文强调
+├── reading-experience.md   长篇精读站：公式排版 / 楷体内嵌 / 三引擎朗读 / 长文强调
+└── interactive-figures.md  交互图：VZ 骨架 / 五条视觉约束 / 接线 / WebKit 验收
 assets/
-├── scaffold/               可运行骨架（index.html / styles.css / kai-font.css / engine.js / app.js / data.*.js）
+├── scaffold/               可运行骨架（index.html / styles.css / kai-font.css / engine.js / app.js / viz-* / data.*.js）
 └── reading/                朗读与字体工具（tts.js / tts-proxy.py / build-kai-font.py）
 ```
 
@@ -136,6 +137,22 @@ assets/
 | 系统楷体在 Safari 匹配不到 | 按需字体资产的问题，必须子集内嵌；`document.fonts.check()` 会假阳性 |
 | 想听书 | 三引擎（本机神经语音 / 在线 / 系统）+ `auto` 自动降级；Edge 神经语音无法浏览器直连 |
 | 长文抓不住重点 | 三层标注：定义/结论句（≤70 字）、转折词、本章首次出现的术语 |
+
+---
+
+## 交互图
+
+「角度除以 n，但角度有 n 种写法」这类地方，读者第三步就在脑内断掉——那正是配图的信号。
+
+脚手架自带引擎 `viz-core.js`（481 行、零依赖）和一张示例图（遗忘曲线，挂在教材「遗忘不是敌人」那关）：
+
+```js
+VZ.define({ "f-x": { title, hint, legend, draw: function (stage) { /* 建一次，改属性 */ } } });
+```
+
+五条踩过的约束：只用 `VZ.C` 色板、不搬外部 demo 的渐变皮肤；`stage.clientWidth < 560` 必须换窄屏版面；
+标签重合要改方向；轴名与刻度数字错开；图例线段用 3px 实心块（`border-top` + `height:0` 会被 border-box 裁掉）。
+细则见 `references/interactive-figures.md`。
 
 ---
 

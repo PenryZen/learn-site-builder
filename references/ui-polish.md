@@ -100,6 +100,7 @@ exec "$HOME/Library/Caches/ms-playwright/chromium-1223/chrome-mac-arm64/Google C
 | 长文 | `.rd-p` 楷体（`kai-font.css` 子集内嵌）、`.key/.term/.turn` 三层强调、`.math-line`、`.notesblk`、阅读模式 |
 | 交互 | `role/tabindex` + Enter/空格、`:focus-visible` 环、`aria-current`/`aria-pressed`、toast 走 `.toast.on` |
 | 学伴 | 浮窗 + 「⤢」分屏（右侧整屏高、正文让宽、偏好持久化）、模式组、`.chat .sys/.err` |
+| 交互图 | `viz-core.js`（钢笔线 + 六色板 + slider/btn/chips/panel）+ 一张现成的遗忘曲线图 |
 | 无障碍 | 未解锁固定色 `#8d86b5`（≈4.6:1，不用 `opacity` 压）、`prefers-reduced-motion`、`tabular-nums` |
 
 所以新建站时不用再走一遍「从模板痕迹改到干净」——直接从脚手架开始，**默认就是对的**。

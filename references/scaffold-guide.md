@@ -11,6 +11,8 @@
 | `kai-font.css` | **重新生成** | 长文楷体子集，`build-kai-font.py` 产物；内容变了要重跑 |
 | `engine.js` | **不改** | SM-2、已学状态、校准、错因、成就、导出 |
 | `app.js` | **不改** | 渲染与关卡流程（从 `DATA` 读一切） |
+| `viz-core.js` | **不改** | 交互图引擎（`VZ.define` / `VZ.fig`，零依赖） |
+| `viz-demo.js` | **加图改这个** | 图库：一张图 = 一个 `VZ.define` 键；已带一张遗忘曲线示例 |
 | `data.js` | **写这个** | 内容层：区域、教材、卡片、题目、关卡 |
 | `lessons.js` | 可选 | 内容多时把教材单独放这里；不用就保持占位 |
 
@@ -60,7 +62,7 @@ python3 <skill>/assets/reading/build-kai-font.py --root . --out kai-font.css
 
 1. 每篇 `lesson.teaches` 只含**同区域**卡片的 id
 2. 所有 `teaches` 的并集 = 全部卡片（无孤儿卡）
-3. 每篇 lesson 字段齐全：`hook/essence/analogy/example/counter/visual/number/check`
+3. 每篇 lesson 字段齐全：`hook/essence/analogy/example/counter/visual/number/check`（`fig` 可选，指向 viz-demo.js 里的图 id）
 4. 每张卡 `vivid` 含 `【一句话】`+`【类比】`，且含 `【例子】` 或 `【数字】`
 5. `DATA.levels` 里，同区域的 `lesson` 必须排在训练关之前
 6. `region.id`、`card.r`、`lesson.r`、`level.r` 四处的取值要对得上
@@ -114,13 +116,28 @@ document.documentElement.scrollWidth - innerWidth                     // 360/400
 | 卡点拆解 | `notesblk` + `note` / `note-q` / `note-a` | 金底块，问答两行都用楷体 |
 | 公式 | `math-line` / `mblk mb-disp` / `.katex` | 独立成行的公式块；需另接 math.js + KaTeX（见 `reading-experience.md`） |
 | 插图 | `bookfig` + `figcaption` | 白底图片 + 左对齐图注，图注可含公式 |
-| 交互图 | `figbox` / `fig-title` / `viz-chip` / `viz-btn` / `viz-readout` | 配合 `viz-core.js` 的画布/SVG 图 |
+| 交互图 | `figbox` / `fig-title` / `viz-chip` / `viz-btn` / `viz-readout` | 配合 `viz-core.js`，**加图看 `interactive-figures.md`** |
 | 朗读 | `ttsbar` / `rd-p.tts-on` / `ttscfg` | 配合 `assets/reading/tts.js` |
 | 复习提示 | `resumebar` | 「回到上次位置」提示条 |
 | 标签 | `pill` / `pill hot` / `pill ok` / `tag-new` / `tag-ok` | 中性 / 品红 / 绿 / 未学 / 已学 |
 
 排版约束：`#view-level` 已经是 780px 列宽，**不要**再给段落或卡片加 `max-width`；
 标题层级用 `h2`（块标题）与 `h3`（小节），不要跳级到 `h4`。
+
+### 加一张交互图（三处改动）
+
+```js
+// 1) viz-demo.js：注册（复制那条 f-demo-forget 改掉 id 与 draw）
+VZ.define({ "f-my": { title: "…", hint: "…", legend: [...], draw: function (stage) { … } } });
+
+// 2) 教材里给 fig 字段：第三步（number）会挂图
+{ id: "ls2", …, number: "…", fig: "f-my" }
+
+// 3) 完事——app.js 里已经有 VZ.fig 的挂载点，index.html 也已引入两个 js
+```
+
+什么时候值得做、骨架怎么写、五条视觉约束（色板 / 窄屏换版面 / 标签避让 / 轴名错位 / 图例色块）
+都在 `interactive-figures.md`。**先读那篇再动手**，能省掉三轮返工。
 
 ## 九、样式与 demo 站点
 

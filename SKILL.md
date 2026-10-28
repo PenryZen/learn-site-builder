@@ -88,6 +88,21 @@ window.LESSONS = [
 python3 assets/reading/build-kai-font.py --root . --family KaiSubset
 ```
 
+## 交互图（概念有空间/数量结构时）
+
+文字讲到「角度除以 n，但角度有 n 种写法」这类地方，读者第三步就在脑内断了——那正是配图的信号。
+脚手架已内置引擎与一张示例图：`viz-core.js`（481 行、零依赖）+ `viz-demo.js`，
+教材关的第三步自动挂 `ls.fig` 指向的图。
+
+```js
+VZ.define({ "f-x": { title, hint, legend, draw: function (stage) { /* 建一次，改属性 */ } } });
+```
+
+五条硬约束（都踩过）：只用 `VZ.C` 色板、不搬外部 demo 的渐变皮肤；`stage.clientWidth < 560`
+必须换窄屏版面（否则 760 宽缩到 43%，字变 4.7px）；标签重合要改方向；轴名与刻度数字错开；
+图例线段用 3px 实心块（`border-top` + `height:0` 在 border-box 下会被裁掉）。
+细则与验收见 `references/interactive-figures.md`。
+
 要动观感先看 `references/ui-polish.md`：左侧色条、渐变文字、嵌套卡片是三个最显眼的模板痕迹，一条设计检测命令就能扫出来。
 
 两条最容易踩的坑，先记住：
@@ -105,6 +120,7 @@ python3 assets/reading/build-kai-font.py --root . --family KaiSubset
 - `references/ai-companion.md`：AI 学习伴侣集成
 - `references/ui-polish.md`：界面打磨（Impeccable 体检接入 / 五条硬规则 / 配色 token / 验收清单）
 - `references/reading-experience.md`：长篇精读站（公式独立成行 / 楷体子集内嵌 / 三引擎朗读 / 图注里的数学 / 长文强调 / **公式引擎的加载顺序**）+ 总验收清单
+- `references/interactive-figures.md`：交互图（什么时候值得做 / VZ 骨架 / 五条视觉约束 / 接线 / WebKit 验收）
 
 ## 脚手架
 
@@ -117,6 +133,8 @@ scaffold/
 ├── kai-font.css      # 楷体子集（build-kai-font.py 生成，换内容后重跑）
 ├── engine.js         # SM-2 调度、已学状态、校准、错因、成就、导出
 ├── app.js            # 视图渲染与关卡流程（从 DATA 读一切）
+├── viz-core.js       # 交互图引擎（零依赖，VZ.define / VZ.fig）
+├── viz-demo.js       # 示例交互图（遗忘曲线），复制改 id 就能加自己的
 ├── lessons.js        # 教材（多时单独放；不用就保持占位）
 ├── data.demo.js      # 演示数据（开箱即用）
 └── data.template.js  # 空模板（复制成 data.js 后填内容）

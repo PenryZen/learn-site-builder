@@ -403,6 +403,9 @@ body.readmode .emph-legend{font-size:13px}
 .fig-title{font-size:12px;color:var(--cyan);font-weight:700;margin-bottom:12px;letter-spacing:.08em}
 .fig-stage{position:relative}
 .fig-svg{width:100%;height:auto;display:block;border-radius:12px;background:#100c24}
+.viz-legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:10px;font-size:12px;color:var(--hint)}
+.viz-legend span{white-space:nowrap}
+.viz-legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:middle}
 .viz-note{margin-top:12px;font-size:13px;line-height:1.8;color:#cfc7ff;
   background:var(--surf2);border:1px solid var(--line);border-radius:10px;padding:10px 13px}
 .viz-note b{color:var(--gold)}

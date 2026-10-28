@@ -349,6 +349,10 @@ var App = (function () {
     } else if (step === "number") {
       body = '<div class="blk der"><div class="blk-t">一图流</div><pre class="viz">' + nl(ls.visual) + "</pre></div>" +
         '<div class="blk recap"><div class="blk-t">关键数字</div><p class="rd-p">' + nl(cutLabel(ls.number, "关键数字")) + "</p></div>";
+      /* 教材的 fig 字段：第三步可以挂一张交互图（样式见 .figbox，引擎见 viz-core.js） */
+      if (ls.fig && typeof VZ !== "undefined" && VZ.has(ls.fig)) {
+        body += '<div class="figbox fig-inline" id="ls-fig"></div>';
+      }
       btn = '<button class="btn primary" id="ls-next">做个小检查 →</button>';
     } else {
       body = '<div class="blk def"><div class="blk-t">出门检查</div><p class="rd-p">' + nl(ls.check.q) + "</p></div>" +
@@ -357,6 +361,9 @@ var App = (function () {
     }
     $("lv-stage").innerHTML = head + body;
     act.innerHTML = btn;
+    if (step === "number" && ls.fig && typeof VZ !== "undefined" && VZ.has(ls.fig)) {
+      VZ.fig(ls.fig, $("ls-fig"));
+    }
     if (step !== "check") {
       $("ls-next").onclick = function () { cur.idx++; renderStage(); };
     } else {
